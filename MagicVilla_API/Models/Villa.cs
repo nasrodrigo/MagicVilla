@@ -1,4 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using MagicVilla_API.Models.DTO;
+using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MagicVilla_API.Models
@@ -16,5 +18,6 @@ namespace MagicVilla_API.Models
         public double Rate { get; set; }
         public DateTime CreatedDate { get; set; }
         public DateTime UpdatedDate { get; set; }
+
     }
 }
