@@ -41,7 +41,7 @@ namespace MagicVilla_API.Repository
             return await query.ToListAsync();
         }
 
-        public async Task<T> GetByAsync(Expression<Func<T, bool>> filter = null, bool tracked = false)
+        public async Task<T> GetByAsync(Expression<Func<T, bool>> filter, bool tracked = false)
         {
             IQueryable<T> query = dbSet;
 
@@ -80,7 +80,6 @@ namespace MagicVilla_API.Repository
             T entity = await query.FirstOrDefaultAsync();
 
             entityPatch.ApplyTo(entity);
-
             dbSet.Update(entity);
             await SaveAsync();
 

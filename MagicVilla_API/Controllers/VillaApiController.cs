@@ -9,9 +9,9 @@ using System.Net;
 
 namespace MagicVilla_API.Controllers
 {
-    [Route("api/VillaApi")]
+    [Route("api/v{version:apiVersion}/VillaApi")]
+    [ApiVersion("1.0")]
     [ApiController]
-    [Authorize]
     public class VillaApiController : ControllerBase
     {
         protected APIResponse _response;
@@ -31,6 +31,7 @@ namespace MagicVilla_API.Controllers
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [Authorize]
         public async Task<ActionResult<APIResponse>> GetVillas()
         {
             _logger.LogInformation("Fetching Villas");
@@ -71,6 +72,7 @@ namespace MagicVilla_API.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [Authorize]
         public async Task<ActionResult<APIResponse>> GetVilla(int id)
         {
             if (0 == id)
