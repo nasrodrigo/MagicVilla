@@ -5,11 +5,14 @@ using MagicVilla_API.Repository;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
+using Microsoft.AspNetCore.Authorization;
+using System.Data;
 
 namespace MagicVilla_API.Controllers
 {
     [Route("api/VillaNumberApi")]
     [ApiController]
+    [Authorize]
     public class VillaNumberApiController: ControllerBase
     {
         protected APIResponse _response;
@@ -108,6 +111,7 @@ namespace MagicVilla_API.Controllers
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<APIResponse>> CreateVillaNumber([FromBody] VillaNumberDTO VillaNumberDTO)
         {
             //if (!ModelState.IsValid)
@@ -136,7 +140,7 @@ namespace MagicVilla_API.Controllers
 
                 CreatedAtRoute("GetVillaNumber", new { id = VillaNumber.Id }, VillaNumber);
 
-                _response.StatusCode = HttpStatusCode.NoContent;
+                _response.StatusCode = HttpStatusCode.Created;
                 _response.IsSuccess = true;
 
             }
@@ -155,6 +159,7 @@ namespace MagicVilla_API.Controllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<APIResponse>> DeleteVillaNumber(int id)
         {
 
@@ -192,6 +197,7 @@ namespace MagicVilla_API.Controllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<APIResponse>> UpdateVillaNumber(int id, [FromBody] VillaNumberDTO VillaNumberDTO)
         {
             if (null == VillaNumberDTO || 0 == id)
@@ -238,6 +244,7 @@ namespace MagicVilla_API.Controllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<APIResponse>> PatchVillaNumber(int id, JsonPatchDocument<VillaNumber> VillaNumberPatch)
         {
             if (null == VillaNumberPatch || 0 == id)

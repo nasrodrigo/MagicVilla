@@ -2,6 +2,7 @@
 using MagicVilla_API.Models;
 using MagicVilla_API.Models.DTO;
 using MagicVilla_API.Repository;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
@@ -10,6 +11,7 @@ namespace MagicVilla_API.Controllers
 {
     [Route("api/VillaApi")]
     [ApiController]
+    [Authorize]
     public class VillaApiController : ControllerBase
     {
         protected APIResponse _response;
@@ -106,6 +108,7 @@ namespace MagicVilla_API.Controllers
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [Authorize (Roles ="ADMIN")]
         public async Task<ActionResult<APIResponse>> CreateVilla([FromBody] VillaDTO villaDTO)
         {
             //if (!ModelState.IsValid)
@@ -133,7 +136,7 @@ namespace MagicVilla_API.Controllers
 
                 CreatedAtRoute("GetVilla", new { id = villa.Id }, villa);
 
-                _response.StatusCode = HttpStatusCode.NoContent;
+                _response.StatusCode = HttpStatusCode.Created;
                 _response.IsSuccess = true;
 
             }
@@ -152,6 +155,7 @@ namespace MagicVilla_API.Controllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<APIResponse>> DeleteVilla(int id)
         {
 
@@ -189,6 +193,7 @@ namespace MagicVilla_API.Controllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<APIResponse>> UpdateVilla(int id, [FromBody] VillaDTO villaDTO)
         {
             if (null == villaDTO || 0 == id)
@@ -229,6 +234,7 @@ namespace MagicVilla_API.Controllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<APIResponse>> PatchVilla(int id, JsonPatchDocument<Villa> villaPatch)
         {
             if (null == villaPatch || 0 == id)
