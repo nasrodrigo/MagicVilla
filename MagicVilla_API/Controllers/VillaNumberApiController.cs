@@ -10,7 +10,8 @@ using System.Data;
 
 namespace MagicVilla_API.Controllers
 {
-    [Route("api/VillaNumberApi")]
+    [Route("api/v{version:apiVersion}/VillaNumberApi")]
+    [ApiVersion("1.0")]
     [ApiController]
     [Authorize]
     public class VillaNumberApiController: ControllerBase

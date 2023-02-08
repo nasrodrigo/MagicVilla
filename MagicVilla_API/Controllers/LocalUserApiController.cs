@@ -4,12 +4,12 @@ using MagicVilla_API.Models.DTO;
 using MagicVilla_API.Repository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Data;
 using System.Net;
 
 namespace MagicVilla_API.Controllers
 {
-    [Route("api/Auth")]
+    [Route("api/v{version:apiVersion}/Auth")]
+    [ApiVersionNeutral]
     [ApiController]
     public class LocalUserApiController : ControllerBase
     {

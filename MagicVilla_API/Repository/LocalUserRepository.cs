@@ -1,5 +1,4 @@
-﻿using MagicVilla_API.Mapper;
-using MagicVilla_API.Models;
+﻿using MagicVilla_API.Models;
 using MagicVilla_API.Models.DTO;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
