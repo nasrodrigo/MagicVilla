@@ -4,6 +4,7 @@ using MagicVilla_API;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace MagicVillaAPI.Migrations
 {
     [DbContext(typeof(ApplicationDBContext))]
-    partial class ApplicationDBContextModelSnapshot : ModelSnapshot
+    [Migration("20230206210848_UpdateUserLocalRolesField")]
+    partial class UpdateUserLocalRolesField
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -55,7 +58,7 @@ namespace MagicVillaAPI.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("LocalUserId")
+                    b.Property<int?>("LocalUserId")
                         .HasColumnType("int");
 
                     b.Property<string>("Role")
@@ -132,13 +135,9 @@ namespace MagicVillaAPI.Migrations
 
             modelBuilder.Entity("MagicVilla_API.Models.LocalUserRole", b =>
                 {
-                    b.HasOne("MagicVilla_API.Models.LocalUser", "LocalUser")
+                    b.HasOne("MagicVilla_API.Models.LocalUser", null)
                         .WithMany("Roles")
-                        .HasForeignKey("LocalUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("LocalUser");
+                        .HasForeignKey("LocalUserId");
                 });
 
             modelBuilder.Entity("MagicVilla_API.Models.VillaNumber", b =>

@@ -1,26 +1,16 @@
-﻿using MagicVilla_API.Controllers;
-using MagicVilla_API.Data;
-using MagicVilla_API.Mapper;
-using MagicVilla_API.Models;
-using MagicVilla_API.Models.DTO;
-using Microsoft.AspNetCore.JsonPatch;
+﻿using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
-using System.Diagnostics;
-using System.Linq;
 using System.Linq.Expressions;
-using Microsoft.AspNetCore.Mvc;
 
 namespace MagicVilla_API.Repository
 {
     public class Repository<T> : IRepository<T> where T : class
     {
-        private readonly ILogger<VillaApiController> _logger;
         private readonly ApplicationDBContext _db;
         internal DbSet<T> dbSet;
 
-        public Repository(ILogger<VillaApiController> Logger, ApplicationDBContext db)
+        public Repository(ApplicationDBContext db)
         {
-            _logger = Logger;
             _db = db;
             dbSet = _db.Set<T>();
         }

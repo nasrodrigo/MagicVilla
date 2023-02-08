@@ -4,6 +4,7 @@ using MagicVilla_API;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace MagicVillaAPI.Migrations
 {
     [DbContext(typeof(ApplicationDBContext))]
-    partial class ApplicationDBContextModelSnapshot : ModelSnapshot
+    [Migration("20230206210147_AddLocalUserTable")]
+    partial class AddLocalUserTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -45,28 +48,6 @@ namespace MagicVillaAPI.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("LocalUser");
-                });
-
-            modelBuilder.Entity("MagicVilla_API.Models.LocalUserRole", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("LocalUserId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Role")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("LocalUserId");
-
-                    b.ToTable("LocalUserRole");
                 });
 
             modelBuilder.Entity("MagicVilla_API.Models.Villa", b =>
@@ -130,17 +111,6 @@ namespace MagicVillaAPI.Migrations
                     b.ToTable("VillaNumber");
                 });
 
-            modelBuilder.Entity("MagicVilla_API.Models.LocalUserRole", b =>
-                {
-                    b.HasOne("MagicVilla_API.Models.LocalUser", "LocalUser")
-                        .WithMany("Roles")
-                        .HasForeignKey("LocalUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("LocalUser");
-                });
-
             modelBuilder.Entity("MagicVilla_API.Models.VillaNumber", b =>
                 {
                     b.HasOne("MagicVilla_API.Models.Villa", "Villa")
@@ -150,11 +120,6 @@ namespace MagicVillaAPI.Migrations
                         .IsRequired();
 
                     b.Navigation("Villa");
-                });
-
-            modelBuilder.Entity("MagicVilla_API.Models.LocalUser", b =>
-                {
-                    b.Navigation("Roles");
                 });
 #pragma warning restore 612, 618
         }
