@@ -3,10 +3,10 @@ using MagicVilla_API.Models.DTO;
 
 namespace MagicVilla_API.Repository
 {
-    public interface ILocalUserRepository : IRepository<LocalUser>
+    public interface ILocalUserRepository
     {
-        Task<LoginResponse> Login(LoginRequestDTO loginRequestDTO);
+        Task<LoginResponseDTO> Login(LoginRequestDTO loginRequestDTO);
         Task<bool> isExistingUser(string userName);
-        Task Register(LocalUser localUser);
+        Task Register(UserDTO user);
     }
 }

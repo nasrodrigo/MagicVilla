@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MagicVilla_API.Models
 {
-    public class LocalUser
+    public class ApplicationUserMapper
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
