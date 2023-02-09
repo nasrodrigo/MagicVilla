@@ -1,5 +1,7 @@
-﻿using MagicVilla_API.Models;
+﻿using MagicVilla_API.Mapper;
+using MagicVilla_API.Models;
 using MagicVilla_API.Models.DTO;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -8,58 +10,58 @@ using System.Text;
 
 namespace MagicVilla_API.Repository
 {
-    public class LocalUserRepository : Repository<LocalUser>, ILocalUserRepository
+    public class LocalUserRepository : ILocalUserRepository
     {
+        internal ApplicationDBContext _db;
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly RoleManager<IdentityRole> _roleManager;
         private string secretKey;
-        internal DbSet<LocalUserRole> dbSetRole;
-        private readonly ApplicationDBContext _db;
-        public LocalUserRepository(ApplicationDBContext db, IConfiguration configuration) : base(db)
+
+        ApplicationUserToUserDTOMapper applicationUserToLocalUserDTOMapper = new ApplicationUserToUserDTOMapper();
+        UserDTOToApplicationUserMapper userDTOToApplicationUserMapper = new UserDTOToApplicationUserMapper();
+
+        public LocalUserRepository(ApplicationDBContext db, IConfiguration configuration, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager) 
         {
-            dbSetRole = db.Set<LocalUserRole>();
             _db = db;
+            _userManager = userManager;
+            _roleManager = roleManager;
             secretKey = configuration.GetValue<string>("ApiSettings:Secret");
         }
 
         public async Task<bool> isExistingUser(String userName)
         {
-            return null != await dbSet.FirstOrDefaultAsync(user => userName.ToLower() == user.UserName.ToLower());
+            return null != await _db.ApplicationUser.FirstOrDefaultAsync(user => userName.ToLower() == user.UserName.ToLower());
         }
 
-        public async Task<LoginResponse> Login(LoginRequestDTO loginRequestDTO)
+        public async Task<LoginResponseDTO> Login(LoginRequestDTO loginRequestDTO)
         {
-            LocalUser localUser = await dbSet.FirstOrDefaultAsync(user =>
-                loginRequestDTO.UserName == user.UserName && loginRequestDTO.Password == user.Password);
-            if (localUser is null)
+            ApplicationUser user = await _db.ApplicationUser.FirstOrDefaultAsync(user =>
+                loginRequestDTO.UserName.ToLower() == user.UserName.ToLower());
+
+            bool isPasswordValid = await _userManager.CheckPasswordAsync(user, loginRequestDTO.Password);
+
+            if (user is null || !isPasswordValid)
             {
-                return new LoginResponse
+                return new LoginResponseDTO
                 {
                     User = null,
                     Token = ""
                 };
             }
 
-            IQueryable<LocalUserRole> query = dbSetRole;
-
-            query = query.Where(role => localUser.Id == role.LocalUserId);
-
-            query.AsNoTracking();
-
-            List<LocalUserRole> roles = await query.ToListAsync();
-
-            localUser.Roles = roles;
-
+            var roles = await _userManager.GetRolesAsync(user);
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(secretKey);
 
             List<Claim> claims = new List<Claim>
             {
-                new Claim(ClaimTypes.Name, localUser.Id.ToString()),
+                new Claim(ClaimTypes.Name, user.UserName.ToLower()),
             };
 
-            localUser.Roles.ForEach(role =>
+            foreach(var role in roles)
             {
-                claims.Add(new Claim(ClaimTypes.Role, role.Role));
-            });
+                claims.Add(new Claim(ClaimTypes.Role, role));
+            };
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
@@ -70,26 +72,33 @@ namespace MagicVilla_API.Repository
 
             var token = tokenHandler.CreateToken(tokenDescriptor);
 
-            return new LoginResponse
+            return new LoginResponseDTO
             {
-                User = localUser,
+                User = applicationUserToLocalUserDTOMapper.CreateMap(user),
+                Roles = roles.ToList<string>(),
                 Token = tokenHandler.WriteToken(token)
             };
         }
 
-        public async Task Register(LocalUser localUser)
+        public async Task Register(UserDTO user)
         {
-            await dbSet.AddAsync(localUser);
-            await _db.SaveChangesAsync();
-
-            localUser = await dbSet.FirstOrDefaultAsync(user =>
-                localUser.UserName.ToLower() == user.UserName.ToLower());
-
-            foreach (LocalUserRole role in localUser.Roles)
+            ApplicationUser applicationUser = userDTOToApplicationUserMapper.CreateMap(user);
+            var result = await _userManager.CreateAsync(applicationUser, user.Password);
+            
+            if(result.Succeeded)
             {
-                role.LocalUserId = localUser.Id;
-                await dbSetRole.AddAsync(role);
+                foreach(var role in user.Roles)
+                {
+                    if (await _roleManager.FindByNameAsync(role.ToUpper()) is null)
+                    {
+                        await _roleManager.CreateAsync(new IdentityRole(role.ToUpper()));
+                    }
+
+                    await _userManager.AddToRoleAsync(applicationUser, role.ToUpper());
+                }
+
             }
+                        
         }
     }
 }

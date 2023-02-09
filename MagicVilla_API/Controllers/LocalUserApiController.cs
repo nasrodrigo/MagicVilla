@@ -19,8 +19,8 @@ namespace MagicVilla_API.Controllers
         private readonly ILocalUserRepository _repository;
         private readonly ILocalUserRoleRepository _roleRepository;
 
-        private LocalUserDTOToLocalUserMapper localUserDTOToLocalUserMapper = new LocalUserDTOToLocalUserMapper();
-        private LocalUserRoleDTOToLocalUserRoleMapper localUserRoleDTOToLocalUserRoleMapper = new LocalUserRoleDTOToLocalUserRoleMapper();
+        ApplicationUserToUserDTOMapper applicationUserToLocalUserDTOMapper = new ApplicationUserToUserDTOMapper();
+        UserDTOToApplicationUserMapper userDTOToApplicationUserMapper = new UserDTOToApplicationUserMapper();
 
         public LocalUserApiController(ILogger<LocalUserApiController> Logger, ILocalUserRepository repository, ILocalUserRoleRepository roleRepository)
         {
@@ -44,7 +44,7 @@ namespace MagicVilla_API.Controllers
 
             try
             {
-                LoginResponse loginResponse = await _repository.Login(loginRequestDTO);
+                LoginResponseDTO loginResponse = await _repository.Login(loginRequestDTO);
                 if (loginResponse is null ||
                 (loginResponse.User is null && string.IsNullOrEmpty(loginResponse.Token)))
                 {
@@ -76,25 +76,24 @@ namespace MagicVilla_API.Controllers
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [Authorize(Roles = "ADMIN")]
-        public async Task<ActionResult<ApiResponse>> Register([FromBody] LocalUserDTO localUserDTO)
+        public async Task<ActionResult<ApiResponse>> Register([FromBody] UserDTO user)
         {
-            var isExistingUser = await _repository.isExistingUser(localUserDTO.UserName);
+            var isExistingUser = await _repository.isExistingUser(user.UserName);
             if (isExistingUser)
             {
                 ModelState.AddModelError("CustomError", "User already exists!");
                 return BadRequest(ModelState);
             }
 
-            if (null == localUserDTO)
+            if (null == user)
             {
                 return BadRequest();
             }
 
             try
             {
-                LocalUser localUser = localUserDTOToLocalUserMapper.CreateMap(localUserDTO);
-                await _repository.Register(localUser);
+                
+                await _repository.Register(user);
 
                 _response.StatusCode = HttpStatusCode.Created;
                 _response.IsSuccess = true;
