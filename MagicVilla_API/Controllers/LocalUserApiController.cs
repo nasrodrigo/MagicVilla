@@ -14,7 +14,7 @@ namespace MagicVilla_API.Controllers
     public class LocalUserApiController : ControllerBase
     {
 
-        protected APIResponse _response;
+        protected ApiResponse _response;
         private readonly ILogger<LocalUserApiController> _logger;
         private readonly ILocalUserRepository _repository;
         private readonly ILocalUserRoleRepository _roleRepository;
@@ -34,7 +34,7 @@ namespace MagicVilla_API.Controllers
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<APIResponse>> Login([FromBody] LoginRequestDTO loginRequestDTO)
+        public async Task<ActionResult<ApiResponse>> Login([FromBody] LoginRequestDTO loginRequestDTO)
         {
             if (loginRequestDTO is null ||
                 (string.IsNullOrEmpty(loginRequestDTO.UserName) && string.IsNullOrEmpty(loginRequestDTO.Password)))
@@ -77,7 +77,7 @@ namespace MagicVilla_API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [Authorize(Roles = "ADMIN")]
-        public async Task<ActionResult<APIResponse>> Register([FromBody] LocalUserDTO localUserDTO)
+        public async Task<ActionResult<ApiResponse>> Register([FromBody] LocalUserDTO localUserDTO)
         {
             var isExistingUser = await _repository.isExistingUser(localUserDTO.UserName);
             if (isExistingUser)

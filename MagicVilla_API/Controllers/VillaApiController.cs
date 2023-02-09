@@ -6,15 +6,17 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
+using System.Text.Json;
 
 namespace MagicVilla_API.Controllers
 {
     [Route("api/v{version:apiVersion}/VillaApi")]
     [ApiVersion("1.0")]
+    [Authorize]
     [ApiController]
     public class VillaApiController : ControllerBase
     {
-        protected APIResponse _response;
+        protected ApiResponse _response;
         private readonly ILogger<VillaApiController> _logger;
         private readonly IVillaRepository _repository;
 
@@ -31,18 +33,31 @@ namespace MagicVilla_API.Controllers
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [Authorize]
-        public async Task<ActionResult<APIResponse>> GetVillas()
+        [ResponseCache(CacheProfileName = "Default30")]
+        public async Task<ActionResult<ApiResponse>> GetVillas([FromQuery(Name = "SearchName")] string? name, [FromQuery(Name = "Search")] string? search, int pageSize = 3, int pageNumber = 1)
         {
             _logger.LogInformation("Fetching Villas");
 
             try
             {
-                List<Villa> villaList = await _repository.GetAsync();
+                List<Villa> villaList;
+                if (!string.IsNullOrEmpty(name))
+                {
+                    villaList = await _repository.GetAsync(villa => name.ToUpper() == villa.Name.ToUpper(), pageSize, pageNumber);
+                }
+                else
+                {
+                    villaList = await _repository.GetAsync(null, pageSize, pageNumber);
+                }
 
                 if (null == villaList || 0 >= villaList.Count)
                 {
                     return NotFound();
+                }
+
+                if (!string.IsNullOrEmpty(search))
+                {
+                    villaList = villaList.Where(villa => villa.Name.ToUpper().Contains(search.ToUpper())).ToList();
                 }
 
                 List<VillaDTO> villaDTOList = new List<VillaDTO>();
@@ -51,6 +66,14 @@ namespace MagicVilla_API.Controllers
                 {
                     villaDTOList.Add(villaToVillaDTOMapper.CreateMap(villa));
                 });
+
+                Response.Headers.Add("X-Pagination", JsonSerializer.Serialize(
+                    new Pagination()
+                    {
+                        PageSize = pageSize,
+                        PageNumber = pageNumber
+                    })
+                    );
 
                 _response.Result = villaDTOList;
                 _response.StatusCode = HttpStatusCode.OK;
@@ -72,8 +95,7 @@ namespace MagicVilla_API.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [Authorize]
-        public async Task<ActionResult<APIResponse>> GetVilla(int id)
+        public async Task<ActionResult<ApiResponse>> GetVilla(int id)
         {
             if (0 == id)
             {
@@ -110,8 +132,8 @@ namespace MagicVilla_API.Controllers
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [Authorize (Roles ="ADMIN")]
-        public async Task<ActionResult<APIResponse>> CreateVilla([FromBody] VillaDTO villaDTO)
+        [Authorize(Roles = "ADMIN")]
+        public async Task<ActionResult<ApiResponse>> CreateVilla([FromBody] VillaDTO villaDTO)
         {
             //if (!ModelState.IsValid)
             //{
@@ -158,7 +180,7 @@ namespace MagicVilla_API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [Authorize(Roles = "ADMIN")]
-        public async Task<ActionResult<APIResponse>> DeleteVilla(int id)
+        public async Task<ActionResult<ApiResponse>> DeleteVilla(int id)
         {
 
             if (0 == id)
@@ -196,7 +218,7 @@ namespace MagicVilla_API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [Authorize(Roles = "ADMIN")]
-        public async Task<ActionResult<APIResponse>> UpdateVilla(int id, [FromBody] VillaDTO villaDTO)
+        public async Task<ActionResult<ApiResponse>> UpdateVilla(int id, [FromBody] VillaDTO villaDTO)
         {
             if (null == villaDTO || 0 == id)
             {
@@ -237,7 +259,7 @@ namespace MagicVilla_API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [Authorize(Roles = "ADMIN")]
-        public async Task<ActionResult<APIResponse>> PatchVilla(int id, JsonPatchDocument<Villa> villaPatch)
+        public async Task<ActionResult<ApiResponse>> PatchVilla(int id, JsonPatchDocument<Villa> villaPatch)
         {
             if (null == villaPatch || 0 == id)
             {

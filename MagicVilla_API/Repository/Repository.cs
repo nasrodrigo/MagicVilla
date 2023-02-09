@@ -27,7 +27,7 @@ namespace MagicVilla_API.Repository
             await SaveAsync();
         }
 
-        public async Task<List<T>> GetAsync(Expression<Func<T, bool>>? filter = null)
+        public async Task<List<T>> GetAsync(Expression<Func<T, bool>>? filter = null, int pageSize = 0, int pageNumber = 0)
         {
             IQueryable<T> query = dbSet;
 
@@ -36,7 +36,17 @@ namespace MagicVilla_API.Repository
                 query = query.Where(filter);
             }
 
-            query.AsNoTracking();
+            if(0 < pageSize && 0 < pageNumber)
+            {
+                if(100 < pageSize)
+                {
+                    pageSize = 100;
+                }
+
+                query = query.Skip(pageSize * (pageNumber - 1)).Take(pageSize);
+            }
+
+            query = query.AsNoTracking();
 
             return await query.ToListAsync();
         }
