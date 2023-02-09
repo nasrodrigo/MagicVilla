@@ -11,7 +11,7 @@ namespace MagicVilla_API.Controllers.v2
     [Authorize]
     public class VillaApiController : ControllerBase
     {
-        protected APIResponse _response;
+        protected ApiResponse _response;
         private readonly ILogger<VillaApiController> _logger;
 
         public VillaApiController(ILogger<VillaApiController> Logger)
@@ -23,7 +23,7 @@ namespace MagicVilla_API.Controllers.v2
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public ActionResult<APIResponse> GetVillas()
+        public ActionResult<ApiResponse> GetVillas()
         {
             _logger.LogInformation("Test Versioning");
 

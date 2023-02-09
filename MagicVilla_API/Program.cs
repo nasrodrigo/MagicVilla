@@ -15,7 +15,13 @@ builder.Services.AddDbContext<ApplicationDBContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultSQLConnection"));
 });
 
-builder.Services.AddControllers().AddNewtonsoftJson();
+builder.Services.AddControllers(options =>
+{
+    options.CacheProfiles.Add("Default30", new CacheProfile()
+    {
+        Duration = 30
+    });
+}).AddNewtonsoftJson();
 
 builder.Services.AddScoped<ILocalUserRepository, LocalUserRepository>();
 builder.Services.AddScoped<ILocalUserRoleRepository, LocalUserRoleRepository>();
@@ -24,6 +30,8 @@ builder.Services.AddScoped<IVillaNumberRepository, VillaNumberRepository>();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
+
+builder.Services.AddResponseCaching();
 
 var key = builder.Configuration.GetValue<string>("ApiSettings:Secret");
 builder.Services.AddAuthentication(options =>
