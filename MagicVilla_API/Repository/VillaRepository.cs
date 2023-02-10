@@ -4,7 +4,7 @@ namespace MagicVilla_API.Repository
 {
     public class VillaRepository : Repository<Villa>, IVillaRepository
     {
-        public VillaRepository(ApplicationDBContext db, ILogger<VillaRepository> logger) : base(db, logger)
+        public VillaRepository(ApplicationDBContext db) : base(db)
         {
         }
     }
