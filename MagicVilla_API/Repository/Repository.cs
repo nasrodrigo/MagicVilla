@@ -8,92 +8,152 @@ namespace MagicVilla_API.Repository
     {
         private readonly ApplicationDBContext _db;
         internal DbSet<T> dbSet;
+        private readonly ILogger<Repository<T>> _logger;
 
-        public Repository(ApplicationDBContext db)
+        public Repository(ApplicationDBContext db, ILogger<Repository<T>> logger)
         {
             _db = db;
             dbSet = _db.Set<T>();
+            _logger = logger;
         }
         public async Task CreateAsync(T entity)
         {
-            await dbSet.AddAsync(entity);
-            await SaveAsync();
+            try
+            {
+                await dbSet.AddAsync(entity);
+                await SaveAsync();
+            }
+            catch (Exception e)
+            {
+                _logger.LogError("EXCEPTION: {message}", e.Message);
+            }
 
         }
 
         public async Task RemoveAsync(T entity)
         {
-            dbSet.Remove(entity);
-            await SaveAsync();
+            try
+            {
+                dbSet.Remove(entity);
+                await SaveAsync();
+            }
+            catch (Exception e)
+            {
+                _logger.LogError("EXCEPTION: {message}", e.Message);
+            }
         }
 
         public async Task<List<T>> GetAsync(Expression<Func<T, bool>>? filter = null, int pageSize = 0, int pageNumber = 0)
         {
-            IQueryable<T> query = dbSet;
-
-            if (null != filter)
+            try
             {
-                query = query.Where(filter);
-            }
+                IQueryable<T> query = dbSet;
 
-            if(0 < pageSize && 0 < pageNumber)
-            {
-                if(100 < pageSize)
+                if (null != filter)
                 {
-                    pageSize = 100;
+                    query = query.Where(filter);
                 }
 
-                query = query.Skip(pageSize * (pageNumber - 1)).Take(pageSize);
+                if (0 < pageSize && 0 < pageNumber)
+                {
+                    if (100 < pageSize)
+                    {
+                        pageSize = 100;
+                    }
+
+                    query = query.Skip(pageSize * (pageNumber - 1)).Take(pageSize);
+                }
+
+                query = query.AsNoTracking();
+
+                return await query.ToListAsync();
+            }
+            catch (Exception e)
+            {
+                _logger.LogError("EXCEPTION: {message}", e.Message);
             }
 
-            query = query.AsNoTracking();
-
-            return await query.ToListAsync();
+            return new List<T>();
         }
 
         public async Task<T> GetByAsync(Expression<Func<T, bool>> filter, bool tracked = false)
         {
-            IQueryable<T> query = dbSet;
-
-            if (!tracked)
+            try
             {
-                query = query.AsNoTracking();
+                IQueryable<T> query = dbSet;
+
+                if (!tracked)
+                {
+                    query = query.AsNoTracking();
+                }
+
+                if (null != filter)
+                {
+                    query = query.Where(filter);
+                }
+
+                return (await query.FirstOrDefaultAsync())!;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError("EXCEPTION: {message}", e.Message);
             }
 
-            if (null != filter)
-            {
-                query = query.Where(filter);
-            }
-
-            return await query.FirstOrDefaultAsync();
+            return null;
         }
 
         public async Task SaveAsync()
         {
-            await _db.SaveChangesAsync();
+            try
+            {
+                await _db.SaveChangesAsync();
+            }
+            catch (Exception e)
+            {
+                _logger.LogError("EXCEPTION: {message}", e.Message);
+            }
         }
 
         public async Task<T> UpdateAsync(T entity)
         {
-            dbSet.Update(entity);
-            await SaveAsync();
-            return entity;
+            try
+            {
+                dbSet.Update(entity);
+                await SaveAsync();
+                return entity;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError("EXCEPTION: {message}", e.Message);
+            }
+
+            return null;
         }
 
         public async Task<T> PatchAsync(Expression<Func<T, bool>> filter, JsonPatchDocument<T> entityPatch)
         {
-            IQueryable<T> query = dbSet;
+            try
+            {
+                IQueryable<T> query = dbSet;
 
-            query = query.AsNoTracking();
-            query = query.Where(filter);
+                query = query.AsNoTracking();
+                query = query.Where(filter);
 
-            T entity = await query.FirstOrDefaultAsync();
+                var entity = (await query.FirstOrDefaultAsync())!;
 
-            entityPatch.ApplyTo(entity);
-            dbSet.Update(entity);
-            await SaveAsync();
+                entityPatch.ApplyTo(entity);
+                dbSet.Update(entity);
+                await SaveAsync();
 
-            return entity;
+                return entity;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError("EXCEPTION: {message}", e.Message);
+            }
+
+            return null;
+
         }
 
     }
