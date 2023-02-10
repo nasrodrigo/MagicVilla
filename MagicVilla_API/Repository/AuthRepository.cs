@@ -13,7 +13,6 @@ namespace MagicVilla_API.Repository
     public class AuthRepository : IAuthRepository
     {
         internal ApplicationDBContext _db;
-        private readonly ILogger<AuthRepository> _logger;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly string? secretKey;
@@ -21,11 +20,9 @@ namespace MagicVilla_API.Repository
         private readonly ApplicationUserToUserDTOMapper applicationUserToLocalUserDTOMapper;
         private readonly UserDTOToApplicationUserMapper userDTOToApplicationUserMapper;
 
-        public AuthRepository(ApplicationDBContext db, ILogger<AuthRepository> logger,
-            IConfiguration configuration, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager)
+        public AuthRepository(ApplicationDBContext db, IConfiguration configuration, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager)
         {
             _db = db;
-            _logger = logger;
             _userManager = userManager;
             _roleManager = roleManager;
             secretKey = configuration.GetValue<string>("ApiSettings:Secret");

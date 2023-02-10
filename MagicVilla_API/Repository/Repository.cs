@@ -8,13 +8,11 @@ namespace MagicVilla_API.Repository
     {
         private readonly ApplicationDBContext _db;
         internal DbSet<T> dbSet;
-        private readonly ILogger<Repository<T>> _logger;
 
-        public Repository(ApplicationDBContext db, ILogger<Repository<T>> logger)
+        public Repository(ApplicationDBContext db)
         {
             _db = db;
             dbSet = _db.Set<T>();
-            _logger = logger;
         }
         public async Task CreateAsync(T entity)
         {
