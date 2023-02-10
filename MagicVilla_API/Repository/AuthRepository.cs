@@ -35,99 +35,75 @@ namespace MagicVilla_API.Repository
 
         public async Task<bool> IsExistingUser(String userName)
         {
-            try
-            {
-                return null != await _db.ApplicationUser.FirstOrDefaultAsync(user => userName.ToLower() == user.UserName!.ToLower());
-            }
-            catch (Exception e)
-            {
-                _logger.LogError("EXCEPTION: {message}", e.Message);
-            }
-
-            return false;
+            return null != await _db.ApplicationUser.FirstOrDefaultAsync(user => userName.ToLower() == user.UserName!.ToLower());
         }
 
         public async Task<LoginResponseDTO> Login(LoginRequestDTO loginRequestDTO)
         {
-            try
-            {
-                ApplicationUser? user = await _db.ApplicationUser.FirstOrDefaultAsync(user =>
+            ApplicationUser? user = await _db.ApplicationUser.FirstOrDefaultAsync(user =>
                 loginRequestDTO.UserName!.ToLower() == user.UserName!.ToLower());
 
-                if (null != user)
-                {
-                    bool isPasswordValid = await _userManager.CheckPasswordAsync(user, loginRequestDTO.Password!);
+            bool isPasswordValid = false;
 
-                    if (!isPasswordValid)
-                    {
-                        return new LoginResponseDTO();
-
-                    }
-
-                    var roles = await _userManager.GetRolesAsync(user);
-                    var tokenHandler = new JwtSecurityTokenHandler();
-                    var key = Encoding.ASCII.GetBytes(secretKey!);
-
-                    List<Claim> claims = new()
-                    {
-                        new Claim(ClaimTypes.Name, user.UserName!.ToLower()),
-                    };
-
-                    foreach (var role in roles)
-                    {
-                        claims.Add(new Claim(ClaimTypes.Role, role));
-                    };
-
-                    var tokenDescriptor = new SecurityTokenDescriptor
-                    {
-                        Subject = new ClaimsIdentity(claims),
-                        Expires = DateTime.UtcNow.AddDays(7),
-                        SigningCredentials = new(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-                    };
-
-                    var token = tokenHandler.CreateToken(tokenDescriptor);
-
-                    return new LoginResponseDTO
-                    {
-                        User = applicationUserToLocalUserDTOMapper.CreateMap(user),
-                        Roles = roles.ToList<string>(),
-                        Token = tokenHandler.WriteToken(token)
-                    };
-                }
-                
-            }
-            catch (Exception e)
+            if (null != user)
             {
-                _logger.LogError("EXCEPTION: {message}", e.Message);
+                isPasswordValid = await _userManager.CheckPasswordAsync(user, loginRequestDTO.Password!);
             }
 
-            return new LoginResponseDTO();
+            if (!isPasswordValid)
+            {
+                return new LoginResponseDTO();
+
+            }
+
+            var roles = await _userManager.GetRolesAsync(user!);
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.ASCII.GetBytes(secretKey!);
+
+            List<Claim> claims = new()
+                {
+                    new Claim(ClaimTypes.Name, user!.UserName!.ToLower()),
+                };
+
+            foreach (var role in roles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role));
+            };
+
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(claims),
+                Expires = DateTime.UtcNow.AddDays(7),
+                SigningCredentials = new(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            };
+
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+
+            return new LoginResponseDTO
+            {
+                User = applicationUserToLocalUserDTOMapper.CreateMap(user),
+                Roles = roles.ToList<string>(),
+                Token = tokenHandler.WriteToken(token)
+            };
         }
 
         public async Task Register(UserDTO user)
         {
-            try
+            ApplicationUser applicationUser = userDTOToApplicationUserMapper.CreateMap(user);
+            var result = await _userManager.CreateAsync(applicationUser, user.Password!);
+
+            if (result.Succeeded)
             {
-                ApplicationUser applicationUser = userDTOToApplicationUserMapper.CreateMap(user);
-                var result = await _userManager.CreateAsync(applicationUser, user.Password!);
-
-                if (result.Succeeded)
+                foreach (var role in user.Roles!)
                 {
-                    foreach (var role in user.Roles!)
+                    if (await _roleManager.FindByNameAsync(role.ToUpper()) is null)
                     {
-                        if (await _roleManager.FindByNameAsync(role.ToUpper()) is null)
-                        {
-                            await _roleManager.CreateAsync(new IdentityRole(role.ToUpper()));
-                        }
-
-                        await _userManager.AddToRoleAsync(applicationUser, role.ToUpper());
+                        await _roleManager.CreateAsync(new IdentityRole(role.ToUpper()));
                     }
 
+                    await _userManager.AddToRoleAsync(applicationUser, role.ToUpper());
                 }
-            }
-            catch (Exception e)
-            {
-                _logger.LogError("EXCEPTION: {message}", e.Message);
+
             }
         }
     }
