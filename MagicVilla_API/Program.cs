@@ -27,8 +27,7 @@ builder.Services.AddControllers(options =>
     });
 }).AddNewtonsoftJson();
 
-builder.Services.AddScoped<ILocalUserRepository, LocalUserRepository>();
-builder.Services.AddScoped<ILocalUserRoleRepository, LocalUserRoleRepository>();
+builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<IVillaRepository, VillaRepository>();
 builder.Services.AddScoped<IVillaNumberRepository, VillaNumberRepository>();
 
@@ -53,7 +52,7 @@ builder.Services.AddAuthentication(options =>
             ValidateAudience = false,
             ValidateLifetime = false,
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key!))
         };
     });
 

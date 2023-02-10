@@ -8,7 +8,6 @@ namespace MagicVilla_API
     {
         public ApplicationDBContext(DbContextOptions<ApplicationDBContext> options) : base(options) { }
         public DbSet<ApplicationUser> ApplicationUser { get; set; }
-        public DbSet<ApplicationUserMapper> LocalUser { get; set; }
         public DbSet<Villa> Villas { get; set; }
         public DbSet<VillaNumber> VillaNumber { get; set; }
 

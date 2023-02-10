@@ -20,21 +20,25 @@ namespace MagicVilla_API.Controllers
         private readonly ILogger<VillaApiController> _logger;
         private readonly IVillaRepository _repository;
 
-        private VillaToVillaDTOMapper villaToVillaDTOMapper = new VillaToVillaDTOMapper();
-        private VillaDTOToVillaMapper villaDTOToVillaMapper = new VillaDTOToVillaMapper();
+        private readonly VillaToVillaDTOMapper villaToVillaDTOMapper;
+        private readonly VillaDTOToVillaMapper villaDTOToVillaMapper;
 
         public VillaApiController(ILogger<VillaApiController> Logger, IVillaRepository repository)
         {
             _logger = Logger;
             _repository = repository;
             _response = new();
+            villaToVillaDTOMapper = new();
+            villaDTOToVillaMapper = new();
         }
 
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ResponseCache(CacheProfileName = "Default30")]
-        public async Task<ActionResult<ApiResponse>> GetVillas([FromQuery(Name = "SearchName")] string? name, [FromQuery(Name = "Search")] string? search, int pageSize = 3, int pageNumber = 1)
+        public async Task<ActionResult<ApiResponse>> GetVillas([FromQuery(Name = "SearchName")] string? name,
+            [FromQuery(Name = "Search")] string? search, int pageSize = 3, int pageNumber = 1)
         {
             _logger.LogInformation("Fetching Villas");
 
@@ -43,7 +47,7 @@ namespace MagicVilla_API.Controllers
                 List<Villa> villaList;
                 if (!string.IsNullOrEmpty(name))
                 {
-                    villaList = await _repository.GetAsync(villa => name.ToUpper() == villa.Name.ToUpper(), pageSize, pageNumber);
+                    villaList = await _repository.GetAsync(villa => name.ToUpper() == villa.Name!.ToUpper(), pageSize, pageNumber);
                 }
                 else
                 {
@@ -52,15 +56,17 @@ namespace MagicVilla_API.Controllers
 
                 if (null == villaList || 0 >= villaList.Count)
                 {
-                    return NotFound();
+                    string errorMessage = "No Villa found!";
+                    _logger.LogError("ERROR: {errorMessage}", errorMessage);
+                    return NotFound(_response.NotFoundResponse(errorMessage));
                 }
 
                 if (!string.IsNullOrEmpty(search))
                 {
-                    villaList = villaList.Where(villa => villa.Name.ToUpper().Contains(search.ToUpper())).ToList();
+                    villaList = villaList.Where(villa => villa.Name!.ToUpper().Contains(search.ToUpper())).ToList();
                 }
 
-                List<VillaDTO> villaDTOList = new List<VillaDTO>();
+                List<VillaDTO> villaDTOList = new();
 
                 villaList.ForEach(villa =>
                 {
@@ -82,9 +88,8 @@ namespace MagicVilla_API.Controllers
             }
             catch (Exception e)
             {
-                _response.ErrorMessage = new List<string>() { e.ToString() };
-                _response.StatusCode = HttpStatusCode.InternalServerError;
-                _response.IsSuccess = false;
+                _logger.LogError("ERROR: Internal Server Error");
+                return StatusCode(StatusCodes.Status500InternalServerError, _response.InternalServerErrorResponse(new List<string>() { e.ToString() }));
             }
 
             return Ok(_response);
@@ -95,12 +100,14 @@ namespace MagicVilla_API.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<ApiResponse>> GetVilla(int id)
         {
             if (0 == id)
             {
-                _logger.LogError("INVALID ID: " + id + " is not a valid id");
-                return BadRequest();
+                string errorMessage = id + " is not a valid id!";
+                _logger.LogError("ERROR: {errorMessage}", errorMessage);
+                return BadRequest(_response.BadRequestResponse(errorMessage));
             }
 
             try
@@ -109,7 +116,9 @@ namespace MagicVilla_API.Controllers
 
                 if (null == villa)
                 {
-                    return NotFound();
+                    string errorMessage = "No Villa found for id " + id + "!";
+                    _logger.LogError("ERROR: {errorMessage}", errorMessage);
+                    return NotFound(_response.NotFoundResponse(errorMessage));
                 }
 
                 _response.Result = villaToVillaDTOMapper.CreateMap(villa);
@@ -119,9 +128,8 @@ namespace MagicVilla_API.Controllers
             }
             catch (Exception e)
             {
-                _response.ErrorMessage = new List<string>() { e.ToString() };
-                _response.StatusCode = HttpStatusCode.InternalServerError;
-                _response.IsSuccess = false;
+                _logger.LogError("ERROR: Internal Server Error");
+                return StatusCode(StatusCodes.Status500InternalServerError, _response.InternalServerErrorResponse(new List<string>() { e.ToString() }));
             }
 
             return Ok(_response);
@@ -132,23 +140,22 @@ namespace MagicVilla_API.Controllers
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<ApiResponse>> CreateVilla([FromBody] VillaDTO villaDTO)
         {
-            //if (!ModelState.IsValid)
-            //{
-            //    return BadRequest();
-            //}
-
-            if (null != await _repository.GetByAsync(villa => villaDTO.Name.ToUpper() == villa.Name.ToUpper()))
-            {
-                ModelState.AddModelError("CustomError", "Villa already exists!");
-                return BadRequest(ModelState);
-            }
-
             if (null == villaDTO)
             {
-                return BadRequest();
+                string errorMessage = "Villa Required!";
+                _logger.LogError("ERROR: {errorMessage}", errorMessage);
+                return BadRequest(_response.BadRequestResponse(errorMessage));
+            }
+
+            if (null != await _repository.GetByAsync(villa => villaDTO.Name!.ToUpper() == villa.Name!.ToUpper()))
+            {
+                string errorMessage = "Villa already exists!";
+                _logger.LogError("ERROR: {errorMessage}", errorMessage);
+                return BadRequest(_response.BadRequestResponse(errorMessage));
             }
 
             try
@@ -166,9 +173,8 @@ namespace MagicVilla_API.Controllers
             }
             catch (Exception e)
             {
-                _response.ErrorMessage = new List<string>() { e.ToString() };
-                _response.StatusCode = HttpStatusCode.InternalServerError;
-                _response.IsSuccess = false;
+                _logger.LogError("ERROR: Internal Server Error");
+                return StatusCode(StatusCodes.Status500InternalServerError, _response.InternalServerErrorResponse(new List<string>() { e.ToString() }));
             }
 
 
@@ -179,20 +185,25 @@ namespace MagicVilla_API.Controllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<ApiResponse>> DeleteVilla(int id)
         {
 
             if (0 == id)
             {
-                return BadRequest();
+                string errorMessage = id + " is not a valid id!";
+                _logger.LogError("ERROR: {errorMessage}", errorMessage);
+                return BadRequest(_response.BadRequestResponse(errorMessage));
             }
 
             Villa villa = await _repository.GetByAsync(villa => id == villa.Id);
 
             if (null == villa)
             {
-                return NotFound();
+                string errorMessage = "No Villa found for id " + id + "!";
+                _logger.LogError("ERROR: {errorMessage}", errorMessage);
+                return NotFound(_response.NotFoundResponse(errorMessage));
             }
 
             try
@@ -205,9 +216,8 @@ namespace MagicVilla_API.Controllers
             }
             catch (Exception e)
             {
-                _response.ErrorMessage = new List<string>() { e.ToString() };
-                _response.StatusCode = HttpStatusCode.InternalServerError;
-                _response.IsSuccess = false;
+                _logger.LogError("ERROR: Internal Server Error");
+                return StatusCode(StatusCodes.Status500InternalServerError, _response.InternalServerErrorResponse(new List<string>() { e.ToString() }));
             }
 
             return Ok(_response);
@@ -217,19 +227,35 @@ namespace MagicVilla_API.Controllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<ApiResponse>> UpdateVilla(int id, [FromBody] VillaDTO villaDTO)
         {
             if (null == villaDTO || 0 == id)
             {
-                return BadRequest();
+                string errorMessage = "";
+
+                if (0 == id)
+                {
+                    errorMessage = id + " is not a valid id!";
+                }
+
+                if (null == villaDTO)
+                {
+                    errorMessage = "Villa required!";
+                }
+
+                _logger.LogError("ERROR: {errorMessage}", errorMessage);
+                return BadRequest(_response.BadRequestResponse(errorMessage));
             }
 
             Villa villa = await _repository.GetByAsync(villa => id == villa.Id);
 
             if (null == villa)
             {
-                return NotFound();
+                string errorMessage = "No Villa found for id " + id + "!";
+                _logger.LogError("ERROR: {errorMessage}", errorMessage);
+                return NotFound(_response.NotFoundResponse(errorMessage));
             }
 
             try
@@ -246,9 +272,8 @@ namespace MagicVilla_API.Controllers
             }
             catch (Exception e)
             {
-                _response.ErrorMessage = new List<string>() { e.ToString() };
-                _response.StatusCode = HttpStatusCode.InternalServerError;
-                _response.IsSuccess = false;
+                _logger.LogError("ERROR: Internal Server Error");
+                return StatusCode(StatusCodes.Status500InternalServerError, _response.InternalServerErrorResponse(new List<string>() { e.ToString() }));
             }
 
             return Ok(_response);
@@ -258,19 +283,35 @@ namespace MagicVilla_API.Controllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<ApiResponse>> PatchVilla(int id, JsonPatchDocument<Villa> villaPatch)
         {
             if (null == villaPatch || 0 == id)
             {
-                return BadRequest();
+                string errorMessage = "";
+
+                if (0 == id)
+                {
+                    errorMessage = id + " is not a valid id!";
+                }
+
+                if (null == villaPatch)
+                {
+                    errorMessage = "Value required!";
+                }
+
+                _logger.LogError("ERROR: {errorMessage}", errorMessage);
+                return BadRequest(_response.BadRequestResponse(errorMessage));
             }
 
             Villa villa = await _repository.GetByAsync(villa => id == villa.Id);
 
             if (null == villa)
             {
-                return NotFound();
+                string errorMessage = "No Villa found for id " + id + "!";
+                _logger.LogError("ERROR: {errorMessage}", errorMessage);
+                return NotFound(_response.NotFoundResponse(errorMessage));
             }
 
             try
@@ -283,9 +324,8 @@ namespace MagicVilla_API.Controllers
             }
             catch (Exception e)
             {
-                _response.ErrorMessage = new List<string>() { e.ToString() };
-                _response.StatusCode = HttpStatusCode.InternalServerError;
-                _response.IsSuccess = false;
+                _logger.LogError("ERROR: Internal Server Error");
+                return StatusCode(StatusCodes.Status500InternalServerError, _response.InternalServerErrorResponse(new List<string>() { e.ToString() }));
             }
 
             return Ok(_response);

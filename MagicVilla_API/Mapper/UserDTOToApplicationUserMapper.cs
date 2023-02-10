@@ -11,7 +11,7 @@ namespace MagicVilla_API.Mapper
             {
                 UserName = user.UserName,
                 Email = user.UserName,
-                NormalizedEmail = user.UserName.ToLower(),
+                NormalizedEmail = user.UserName!.ToLower(),
                 Name = user.Name
             };
         }

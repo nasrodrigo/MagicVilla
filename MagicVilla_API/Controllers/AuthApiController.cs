@@ -1,8 +1,6 @@
-﻿using MagicVilla_API.Mapper;
-using MagicVilla_API.Models;
+﻿using MagicVilla_API.Models;
 using MagicVilla_API.Models.DTO;
 using MagicVilla_API.Repository;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
 
@@ -11,22 +9,16 @@ namespace MagicVilla_API.Controllers
     [Route("api/v{version:apiVersion}/Auth")]
     [ApiVersionNeutral]
     [ApiController]
-    public class LocalUserApiController : ControllerBase
+    public class AuthApiController : ControllerBase
     {
-
         protected ApiResponse _response;
-        private readonly ILogger<LocalUserApiController> _logger;
-        private readonly ILocalUserRepository _repository;
-        private readonly ILocalUserRoleRepository _roleRepository;
+        private readonly ILogger<AuthApiController> _logger;
+        private readonly IAuthRepository _repository;
 
-        ApplicationUserToUserDTOMapper applicationUserToLocalUserDTOMapper = new ApplicationUserToUserDTOMapper();
-        UserDTOToApplicationUserMapper userDTOToApplicationUserMapper = new UserDTOToApplicationUserMapper();
-
-        public LocalUserApiController(ILogger<LocalUserApiController> Logger, ILocalUserRepository repository, ILocalUserRoleRepository roleRepository)
+        public AuthApiController(ILogger<AuthApiController> Logger, IAuthRepository repository)
         {
             _logger = Logger;
             _repository = repository;
-            _roleRepository = roleRepository;
             _response = new();
         }
 
@@ -39,7 +31,9 @@ namespace MagicVilla_API.Controllers
             if (loginRequestDTO is null ||
                 (string.IsNullOrEmpty(loginRequestDTO.UserName) && string.IsNullOrEmpty(loginRequestDTO.Password)))
             {
-                return BadRequest();
+                string errorMessage = "UserName and Password are required!";
+                _logger.LogError("ERROR: {errorMessage}", errorMessage);
+                return BadRequest(_response.BadRequestResponse(errorMessage));
             }
 
             try
@@ -48,12 +42,9 @@ namespace MagicVilla_API.Controllers
                 if (loginResponse is null ||
                 (loginResponse.User is null && string.IsNullOrEmpty(loginResponse.Token)))
                 {
-                    _response.ErrorMessage = new List<string> {
-                        "UserName or Password incorrect!"
-                    };
-                    _response.StatusCode = HttpStatusCode.BadRequest;
-                    _response.IsSuccess = false;
-                    return BadRequest(_response);
+                    string errorMessage = "UserName or Password incorrect!";
+                    _logger.LogError("ERROR: {errorMessage}", errorMessage);
+                    return BadRequest(_response.BadRequestResponse(errorMessage));
                 }
 
                 _response.Result = loginResponse;
@@ -63,10 +54,8 @@ namespace MagicVilla_API.Controllers
             }
             catch (Exception e)
             {
-                _response.ErrorMessage = new List<string>() { e.ToString() };
-                _response.StatusCode = HttpStatusCode.InternalServerError;
-                _response.IsSuccess = false;
-                return StatusCode(StatusCodes.Status500InternalServerError, _response);
+                _logger.LogError("ERROR: Internal Server Error");
+                return StatusCode(StatusCodes.Status500InternalServerError, _response.InternalServerErrorResponse(new List<string>() { e.ToString() }));
             }
 
             return Ok(_response);
@@ -78,16 +67,19 @@ namespace MagicVilla_API.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<ApiResponse>> Register([FromBody] UserDTO user)
         {
-            var isExistingUser = await _repository.isExistingUser(user.UserName);
-            if (isExistingUser)
-            {
-                ModelState.AddModelError("CustomError", "User already exists!");
-                return BadRequest(ModelState);
-            }
-
             if (null == user)
             {
-                return BadRequest();
+                string errorMessage = "User required!";
+                _logger.LogError("ERROR: {errorMessage}", errorMessage);
+                return BadRequest(_response.BadRequestResponse(errorMessage));
+            }
+
+            var isExistingUser = await _repository.IsExistingUser(user.UserName!);
+            if (isExistingUser)
+            {
+                string errorMessage = "User already exists!";
+                _logger.LogError("ERROR: {errorMessage}", errorMessage);
+                return BadRequest(_response.BadRequestResponse(errorMessage));
             }
 
             try
@@ -101,10 +93,8 @@ namespace MagicVilla_API.Controllers
             }
             catch (Exception e)
             {
-                _response.ErrorMessage = new List<string>() { e.ToString() };
-                _response.StatusCode = HttpStatusCode.InternalServerError;
-                _response.IsSuccess = false;
-                return StatusCode(StatusCodes.Status500InternalServerError, _response);
+                _logger.LogError("ERROR: Internal Server Error");
+                return StatusCode(StatusCodes.Status500InternalServerError, _response.InternalServerErrorResponse(new List<string>() { e.ToString() }));
             }
 
             return Ok(_response);
