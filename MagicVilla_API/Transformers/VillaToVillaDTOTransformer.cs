@@ -1,9 +1,9 @@
 ﻿using MagicVilla_API.Models;
-using MagicVilla_API.Models.DTO;
+using MagicVilla_API.Models.DTOs;
 
-namespace MagicVilla_API.Mapper
+namespace MagicVilla_API.Transformers
 {
-    public class VillaToVillaDTOMapper: IMapper<Villa, VillaDTO>
+    public class VillaToVillaDTOTransformer: ITransformer<Villa, VillaDTO>
     {
        public VillaDTO CreateMap(Villa villa)
         {

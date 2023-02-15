@@ -1,4 +1,4 @@
-﻿namespace MagicVilla_API.Models.DTO
+﻿namespace MagicVilla_API.Models.DTOs
 {
     public class VillaDTO
     {

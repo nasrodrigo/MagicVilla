@@ -1,6 +1,8 @@
 using MagicVilla_API;
+using MagicVilla_API.DataMappers;
 using MagicVilla_API.Models;
-using MagicVilla_API.Repository;
+using MagicVilla_API.Persistence;
+using MagicVilla_API.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -27,9 +29,14 @@ builder.Services.AddControllers(options =>
     });
 }).AddNewtonsoftJson();
 
-builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+builder.Services.AddScoped<IAuthDataMapper, AuthDataMapper>();
+builder.Services.AddScoped<IVillaDataMapper, VillaDataMapper>();
+builder.Services.AddScoped<IVillaNumberDataMapper, VillaNumberDataMapper>();
+
 builder.Services.AddScoped<IVillaRepository, VillaRepository>();
 builder.Services.AddScoped<IVillaNumberRepository, VillaNumberRepository>();
+
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
