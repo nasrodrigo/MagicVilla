@@ -1,6 +1,5 @@
-﻿using MagicVilla_API.Mapper;
-using MagicVilla_API.Models;
-using MagicVilla_API.Models.DTO;
+﻿using MagicVilla_API.Models;
+using MagicVilla_API.Transformers;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -8,48 +7,52 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
-namespace MagicVilla_API.Repository
+namespace MagicVilla_API.DataMappers
 {
-    public class AuthRepository : IAuthRepository
+    public class AuthDataMapper : IAuthDataMapper
     {
-        internal ApplicationDBContext _db;
+        private readonly ApplicationDBContext _db;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly string? secretKey;
 
-        private readonly ApplicationUserToUserDTOMapper applicationUserToLocalUserDTOMapper;
-        private readonly UserDTOToApplicationUserMapper userDTOToApplicationUserMapper;
+        private readonly ApplicationUserToUserTransformer applicationUserToUserMapper;
+        private readonly UserToApplicationUserTransformer userToApplicationUserMapper;
 
-        public AuthRepository(ApplicationDBContext db, IConfiguration configuration, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager)
+        public AuthDataMapper(
+            ApplicationDBContext db,
+            IConfiguration configuration,
+            UserManager<ApplicationUser> userManager,
+            RoleManager<IdentityRole> roleManager)
         {
-            _db = db;
+            this._db = db;
             _userManager = userManager;
             _roleManager = roleManager;
             secretKey = configuration.GetValue<string>("ApiSettings:Secret");
-            applicationUserToLocalUserDTOMapper = new();
-            userDTOToApplicationUserMapper = new();
+            applicationUserToUserMapper = new();
+            userToApplicationUserMapper = new();
         }
 
-        public async Task<bool> IsExistingUser(String userName)
+        public async Task<bool> IsExistingUser(string userName)
         {
             return null != await _db.ApplicationUser.FirstOrDefaultAsync(user => userName.ToLower() == user.UserName!.ToLower());
         }
 
-        public async Task<LoginResponseDTO> Login(LoginRequestDTO loginRequestDTO)
+        public async Task<LoginResponse> Login(LoginRequest loginRequest)
         {
             ApplicationUser? user = await _db.ApplicationUser.FirstOrDefaultAsync(user =>
-                loginRequestDTO.UserName!.ToLower() == user.UserName!.ToLower());
+                loginRequest.UserName!.ToLower() == user.UserName!.ToLower());
 
             bool isPasswordValid = false;
 
             if (null != user)
             {
-                isPasswordValid = await _userManager.CheckPasswordAsync(user, loginRequestDTO.Password!);
+                isPasswordValid = await _userManager.CheckPasswordAsync(user, loginRequest.Password!);
             }
 
             if (!isPasswordValid)
             {
-                return new LoginResponseDTO();
+                return new LoginResponse();
 
             }
 
@@ -76,17 +79,17 @@ namespace MagicVilla_API.Repository
 
             var token = tokenHandler.CreateToken(tokenDescriptor);
 
-            return new LoginResponseDTO
+            return new LoginResponse
             {
-                User = applicationUserToLocalUserDTOMapper.CreateMap(user),
+                User = applicationUserToUserMapper.CreateMap(user),
                 Roles = roles.ToList<string>(),
                 Token = tokenHandler.WriteToken(token)
             };
         }
 
-        public async Task Register(UserDTO user)
+        public async Task Register(User user)
         {
-            ApplicationUser applicationUser = userDTOToApplicationUserMapper.CreateMap(user);
+            ApplicationUser applicationUser = userToApplicationUserMapper.CreateMap(user);
             var result = await _userManager.CreateAsync(applicationUser, user.Password!);
 
             if (result.Succeeded)

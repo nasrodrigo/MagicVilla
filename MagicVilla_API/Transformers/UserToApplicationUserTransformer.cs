@@ -1,11 +1,10 @@
-﻿using MagicVilla_API.Models.DTO;
-using MagicVilla_API.Models;
+﻿using MagicVilla_API.Models;
 
-namespace MagicVilla_API.Mapper
+namespace MagicVilla_API.Transformers
 {
-    public class UserDTOToApplicationUserMapper : IMapper<UserDTO, ApplicationUser>
+    public class UserToApplicationUserTransformer : ITransformer<User, ApplicationUser>
     {
-        public ApplicationUser CreateMap(UserDTO user)
+        public ApplicationUser CreateMap(User user)
         {
             return new ApplicationUser
             {

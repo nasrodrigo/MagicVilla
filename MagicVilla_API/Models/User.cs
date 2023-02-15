@@ -1,6 +1,6 @@
-﻿namespace MagicVilla_API.Models.DTO
+﻿namespace MagicVilla_API.Models
 {
-    public class UserDTO
+    public class User
     {
         public string? Id { get; set; }
         public string? UserName { get; set; }

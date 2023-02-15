@@ -1,8 +1,7 @@
 ﻿using MagicVilla_API.Models;
-using MagicVilla_API.Models.DTO;
-using MagicVilla_API.Repository;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
+using MagicVilla_API.Persistence;
 
 namespace MagicVilla_API.Controllers
 {
@@ -13,12 +12,12 @@ namespace MagicVilla_API.Controllers
     {
         protected ApiResponse _response;
         private readonly ILogger<AuthApiController> _logger;
-        private readonly IAuthRepository _repository;
+        private readonly IUnitOfWork _db;
 
-        public AuthApiController(ILogger<AuthApiController> Logger, IAuthRepository repository)
+        public AuthApiController(ILogger<AuthApiController> Logger, IUnitOfWork db)
         {
             _logger = Logger;
-            _repository = repository;
+            _db = db;
             _response = new();
         }
 
@@ -26,7 +25,7 @@ namespace MagicVilla_API.Controllers
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<ApiResponse>> Login([FromBody] LoginRequestDTO loginRequestDTO)
+        public async Task<ActionResult<ApiResponse>> Login([FromBody] LoginRequest loginRequestDTO)
         {
             if (loginRequestDTO is null ||
                 (string.IsNullOrEmpty(loginRequestDTO.UserName) && string.IsNullOrEmpty(loginRequestDTO.Password)))
@@ -38,7 +37,7 @@ namespace MagicVilla_API.Controllers
 
             try
             {
-                LoginResponseDTO loginResponse = await _repository.Login(loginRequestDTO);
+                LoginResponse loginResponse = await _db.AuthDataMapper.Login(loginRequestDTO);
                 if (loginResponse is null ||
                 (loginResponse.User is null && string.IsNullOrEmpty(loginResponse.Token)))
                 {
@@ -65,7 +64,7 @@ namespace MagicVilla_API.Controllers
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<ApiResponse>> Register([FromBody] UserDTO user)
+        public async Task<ActionResult<ApiResponse>> Register([FromBody] User user)
         {
             if (null == user)
             {
@@ -74,7 +73,7 @@ namespace MagicVilla_API.Controllers
                 return BadRequest(_response.BadRequestResponse(errorMessage));
             }
 
-            var isExistingUser = await _repository.IsExistingUser(user.UserName!);
+            var isExistingUser = await _db.AuthDataMapper.IsExistingUser(user.UserName!);
             if (isExistingUser)
             {
                 string errorMessage = "User already exists!";
@@ -85,7 +84,8 @@ namespace MagicVilla_API.Controllers
             try
             {
                 
-                await _repository.Register(user);
+                await _db.AuthDataMapper.Register(user);
+                _db.Complete();
 
                 _response.StatusCode = HttpStatusCode.Created;
                 _response.IsSuccess = true;
